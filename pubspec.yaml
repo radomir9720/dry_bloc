@@ -1,0 +1,12 @@
+name: dry_bloc
+description: States and functions for bloc package that reduces boilerplate
+version: 0.1.0+1
+
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  test: ^1.25.8
+  very_good_analysis: ^6.0.0
