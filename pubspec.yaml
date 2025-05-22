@@ -1,12 +1,23 @@
 name: dry_bloc
 description: States and functions for bloc package that reduces boilerplate
+repository: https://github.com/radomir9720/dry_bloc  
+homepage: https://github.com/radomir9720/dry_bloc
+issue_tracker: https://github.com/radomir9720/dry_bloc/issues
+topics: [bloc, state-management]
+
 version: 0.1.0+1
 
 
 environment:
-  sdk: ^3.5.0
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  meta: ^1.16.0
+  bloc: ^9.0.0
+  equatable: ^2.0.7
 
 dev_dependencies:
-  mocktail: ^1.0.4
   test: ^1.25.8
+  mocktail: ^1.0.4
+  bloc_test: ^10.0.0
   very_good_analysis: ^6.0.0
