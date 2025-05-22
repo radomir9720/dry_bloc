@@ -136,6 +136,91 @@ void main() {
       );
     });
 
+    test('whenOrNull pattern-matching method', () {
+      expect(
+        initial.whenOrNull(
+          initial: (d) => d,
+          loading: (d) => d,
+          success: (d) => d,
+          failure: (d, __) => d,
+        ),
+        equals(1),
+      );
+      expect(
+        loading.whenOrNull(
+          initial: (d) => d,
+          loading: (d) => d,
+          success: (d) => d,
+          failure: (d, __) => d,
+        ),
+        equals(2),
+      );
+      expect(
+        success.whenOrNull(
+          initial: (d) => d,
+          loading: (d) => d,
+          success: (d) => d,
+          failure: (d, __) => d,
+        ),
+        equals(3),
+      );
+      expect(
+        failure.whenOrNull(
+          initial: (d) => d,
+          loading: (d) => d,
+          success: (d) => d,
+          failure: (d, __) => d,
+        ),
+        equals(4),
+      );
+      expect(
+        const DryDataState<int, String>.failure(
+          4,
+          DryException.businessTyped('5'),
+        ).whenOrNull(
+          initial: (d) => d,
+          loading: (d) => d,
+          success: (d) => d,
+          failure: (d, e) => e,
+        ),
+        equals(const DryException.businessTyped('5')),
+      );
+
+      // when null
+      expect(
+        initial.whenOrNull(
+          loading: (data) => 2,
+          success: (data) => 3,
+          failure: (data, exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        loading.whenOrNull(
+          initial: (data) => 1,
+          success: (data) => 3,
+          failure: (data, exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        success.whenOrNull(
+          initial: (data) => 1,
+          loading: (data) => 2,
+          failure: (data, exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        failure.whenOrNull(
+          initial: (data) => 1,
+          loading: (data) => 2,
+          success: (data) => 3,
+        ),
+        isNull,
+      );
+    });
+
     test('maybeWhen pattern-matching method', () {
       expect(
         initial.maybeWhen(
@@ -199,27 +284,27 @@ void main() {
     });
 
     test('copyWith method', () {
-      // expect(
-      //   initial.copyWith(
-      //     data: 5,
-      //     exc: const DryException.businessTyped('error'),
-      //   ),
-      //   equals(const DryDataState<int, String>.initial(5)),
-      // );
-      // expect(
-      //   loading.copyWith(
-      //     data: 5,
-      //     exc: const DryException.businessTyped('error'),
-      //   ),
-      //   equals(const DryDataState<int, String>.loading(5)),
-      // );
-      // expect(
-      //   success.copyWith(
-      //     data: 5,
-      //     exc: const DryException.businessTyped('error'),
-      //   ),
-      //   equals(const DryDataState<int, String>.success(5)),
-      // );
+      expect(
+        initial.copyWith(
+          data: 5,
+          exc: const DryException.businessTyped('error'),
+        ),
+        equals(const DryDataState<int, String>.initial(5)),
+      );
+      expect(
+        loading.copyWith(
+          data: 5,
+          exc: const DryException.businessTyped('error'),
+        ),
+        equals(const DryDataState<int, String>.loading(5)),
+      );
+      expect(
+        success.copyWith(
+          data: 5,
+          exc: const DryException.businessTyped('error'),
+        ),
+        equals(const DryDataState<int, String>.success(5)),
+      );
       expect(
         failure.copyWith(
           data: 5,

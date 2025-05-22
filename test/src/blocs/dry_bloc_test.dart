@@ -72,6 +72,28 @@ class _DryDataBloc extends DryDataBloc<_Event, int, _TypedError>
   final _PseudoRepository repository;
 }
 
+class _DryDataBlocGlobalOverride extends DryDataBloc<_Event, int, _TypedError> {
+  _DryDataBlocGlobalOverride(
+    super.initialState, {
+    required this.repository,
+  }) {
+    handle<_Event>(repository.doSomething);
+  }
+
+  final _PseudoRepository repository;
+}
+
+class _DryDataBlocNoOverride extends DryDataBloc<_Event, int, _TypedError> {
+  _DryDataBlocNoOverride(
+    super.initialState, {
+    required this.repository,
+  }) {
+    handle<_Event>(repository.doSomething);
+  }
+
+  final _PseudoRepository repository;
+}
+
 typedef _DryEmptyState = DryEmptyState<_TypedError>;
 
 class _DryEmptyBloc extends DryEmptyBloc<_Event, _TypedError>
@@ -99,6 +121,10 @@ void main() {
   group('DryBloc', () {
     final repo = _PseudoRepositoryMock();
 
+    tearDown(() {
+      reset(repo);
+    });
+
     setUpAll(
       () {
         registerFallbackValue(_Event.success);
@@ -118,52 +144,21 @@ void main() {
       );
     });
 
-    tearDown(() {
-      reset(repo);
-    });
+    group('.globalIsFatal', () {
+      setUpAll(() {
+        DryBloc.globalIsFatalException = (exception, defaultIsFatal) {
+          if (exception is _UntypedError) return false;
+          return defaultIsFatal(exception);
+        };
+      });
 
-    group('DryDataBloc', () {
-      _DryDataBloc blocInitializer() => _DryDataBloc(
-            const DryDataState.initial(1),
-            repository: repo,
-          );
-
-      blocTest<_DryDataBloc, _DryDataState>(
-        'correct initial state',
-        build: blocInitializer,
-        verify: (bloc) =>
-            expect(bloc.state, equals(const _DryDataState.initial(1))),
-      );
-
-      blocTest<_DryDataBloc, _DryDataState>(
-        'Emits loading, then success',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.success),
-        expect: () => [
-          const _DryDataState.loading(1),
-          const _DryDataState.success(2),
-        ],
-        verify: (bloc) {
-          verify(() => bloc.repository.doSomething(_Event.success)).called(1);
-        },
-      );
-
-      blocTest<_DryDataBloc, _DryDataState>(
-        'Emits loading, then failure with business typed error',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwBusinessTyped),
-        expect: () => [
-          const _DryDataState.loading(1),
-          _DryDataState.failure(
-            1,
-            DryException<_TypedError>.businessTyped(_TypedError()),
-          ),
-        ],
-      );
-
-      blocTest<_DryDataBloc, _DryDataState>(
-        'Emits loading, then failure with business untyped error',
-        build: blocInitializer,
+      blocTest<_DryDataBlocGlobalOverride, _DryDataState>(
+        'globalIsFatal overrides default behavior, and makes _UntypedError '
+        'to be threated as a business-logic untyped error',
+        build: () => _DryDataBlocGlobalOverride(
+          const DryDataState.initial(1),
+          repository: repo,
+        ),
         act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
         expect: () => [
           const _DryDataState.loading(1),
@@ -176,168 +171,316 @@ void main() {
         ],
       );
 
-      blocTest<_DryDataBloc, _DryDataState>(
-        'Emits loading, then failure with fatal error, and rethrows',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwFatal),
-        errors: () => [isA<_FatalException>()],
+      tearDownAll(() {
+        DryBloc.globalIsFatalException = null;
+      });
+    });
+    group('without isFatalException overriding', () {
+      blocTest<_DryDataBlocNoOverride, _DryDataState>(
+        '_UntypedError is threated as fatal',
+        build: () => _DryDataBlocNoOverride(
+          const DryDataState.initial(1),
+          repository: repo,
+        ),
+        act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+        errors: () => [isA<_UntypedError>()],
         expect: () => [
           const _DryDataState.loading(1),
           _DryDataState.failure(
             1,
-            DryFatalException(_FatalException()),
+            DryFatalException(_UntypedError()),
           ),
         ],
       );
     });
-    group('DryEmptyBloc', () {
-      _DryEmptyBloc blocInitializer([_DryEmptyState? initialstate]) =>
-          _DryEmptyBloc(
+    group('with isFatalException override', () {
+      group('DryDataBloc', () {
+        _DryDataBloc blocInitializer() => _DryDataBloc(
+              const DryDataState.initial(1),
+              repository: repo,
+            );
+
+        test('in* getters', () async {
+          final bloc = blocInitializer();
+          expect(
+            bloc.inInitial(),
+            const DryDataState<int, _TypedError>.initial(1),
+          );
+          expect(
+            bloc.inLoading(),
+            const DryDataState<int, _TypedError>.loading(1),
+          );
+          expect(
+            bloc.inSuccess(2),
+            const DryDataState<int, _TypedError>.success(2),
+          );
+          expect(
+            bloc.inFailure(DryException.fatal(1)),
+            const DryDataState<int, _TypedError>.failure(
+              1,
+              DryException.fatal(1),
+            ),
+          );
+          await bloc.close();
+        });
+
+        blocTest<_DryDataBloc, _DryDataState>(
+          'correct initial state',
+          build: blocInitializer,
+          verify: (bloc) =>
+              expect(bloc.state, equals(const _DryDataState.initial(1))),
+        );
+
+        blocTest<_DryDataBloc, _DryDataState>(
+          'Emits loading, then success',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.success),
+          expect: () => [
+            const _DryDataState.loading(1),
+            const _DryDataState.success(2),
+          ],
+          verify: (bloc) {
+            verify(() => bloc.repository.doSomething(_Event.success)).called(1);
+          },
+        );
+
+        blocTest<_DryDataBloc, _DryDataState>(
+          'Emits loading, then failure with business typed error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          expect: () => [
+            const _DryDataState.loading(1),
+            _DryDataState.failure(
+              1,
+              DryException<_TypedError>.businessTyped(_TypedError()),
+            ),
+          ],
+        );
+
+        blocTest<_DryDataBloc, _DryDataState>(
+          'Emits loading, then failure with business untyped error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          expect: () => [
+            const _DryDataState.loading(1),
+            _DryDataState.failure(
+              1,
+              DryBusinessUntypedException(
+                _UntypedError(),
+              ),
+            ),
+          ],
+        );
+
+        blocTest<_DryDataBloc, _DryDataState>(
+          'Emits loading, then failure with fatal error, and rethrows',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwFatal),
+          errors: () => [isA<_FatalException>()],
+          expect: () => [
+            const _DryDataState.loading(1),
+            _DryDataState.failure(
+              1,
+              DryFatalException(_FatalException()),
+            ),
+          ],
+        );
+      });
+      group('DryEmptyBloc', () {
+        _DryEmptyBloc blocInitializer([_DryEmptyState? initialstate]) =>
+            _DryEmptyBloc(
+              repository: repo,
+              initialState: initialstate,
+            );
+
+        test('in* getters', () async {
+          final bloc = blocInitializer();
+          expect(
+            bloc.inInitial(),
+            const DryEmptyState<_TypedError>.initial(),
+          );
+          expect(
+            bloc.inLoading(),
+            const DryEmptyState<_TypedError>.loading(),
+          );
+          expect(
+            bloc.inSuccess(2),
+            const DryEmptyState<_TypedError>.success(),
+          );
+          expect(
+            bloc.inFailure(DryException.fatal(1)),
+            const DryEmptyState<_TypedError>.failure(
+              DryException.fatal(1),
+            ),
+          );
+          await bloc.close();
+        });
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'correct initial state(default one)',
+          build: blocInitializer,
+          verify: (bloc) =>
+              expect(bloc.state, equals(const _DryEmptyState.initial())),
+        );
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'correct initial state(passing)',
+          build: () => blocInitializer(const DryEmptyState.loading()),
+          verify: (bloc) =>
+              expect(bloc.state, equals(const _DryEmptyState.loading())),
+        );
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'Emits loading, then success',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.success),
+          expect: () => [
+            const _DryEmptyState.loading(),
+            const _DryEmptyState.success(),
+          ],
+          verify: (bloc) {
+            verify(() => bloc.repository.doSomething(_Event.success)).called(1);
+          },
+        );
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'Emits loading, then failure with business typed error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          expect: () => [
+            const _DryEmptyState.loading(),
+            _DryEmptyState.failure(
+              DryException.businessTyped(_TypedError()),
+            ),
+          ],
+        );
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'Emits loading, then failure with business untyped error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          expect: () => [
+            const _DryEmptyState.loading(),
+            _DryEmptyState.failure(
+              DryBusinessUntypedException(
+                _UntypedError(),
+              ),
+            ),
+          ],
+        );
+
+        blocTest<_DryEmptyBloc, _DryEmptyState>(
+          'Emits loading, then failure with fatal error, and rethrows',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwFatal),
+          errors: () => [isA<_FatalException>()],
+          expect: () => [
+            const _DryEmptyState.loading(),
+            _DryEmptyState.failure(
+              DryException.fatal(_FatalException()),
+            ),
+          ],
+        );
+      });
+      group('DrySuccessDataBloc', () {
+        _DrySuccessDataBloc blocInitializer([
+          _DrySuccessDataState? initialstate,
+        ]) {
+          return _DrySuccessDataBloc(
             repository: repo,
             initialState: initialstate,
           );
+        }
 
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'correct initial state(default one)',
-        build: blocInitializer,
-        verify: (bloc) =>
-            expect(bloc.state, equals(const _DryEmptyState.initial())),
-      );
-
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'correct initial state(passing)',
-        build: () => blocInitializer(const DryEmptyState.loading()),
-        verify: (bloc) =>
-            expect(bloc.state, equals(const _DryEmptyState.loading())),
-      );
-
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'Emits loading, then success',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.success),
-        expect: () => [
-          const _DryEmptyState.loading(),
-          const _DryEmptyState.success(),
-        ],
-        verify: (bloc) {
-          verify(() => bloc.repository.doSomething(_Event.success)).called(1);
-        },
-      );
-
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'Emits loading, then failure with business typed error',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwBusinessTyped),
-        expect: () => [
-          const _DryEmptyState.loading(),
-          _DryEmptyState.failure(
-            DryException.businessTyped(_TypedError()),
-          ),
-        ],
-      );
-
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'Emits loading, then failure with business untyped error',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
-        expect: () => [
-          const _DryEmptyState.loading(),
-          _DryEmptyState.failure(
-            DryBusinessUntypedException(
-              _UntypedError(),
+        test('in* getters', () async {
+          final bloc = blocInitializer();
+          expect(
+            bloc.inInitial(),
+            const DrySuccessDataState<int, _TypedError>.initial(),
+          );
+          expect(
+            bloc.inLoading(),
+            const DrySuccessDataState<int, _TypedError>.loading(),
+          );
+          expect(
+            bloc.inSuccess(2),
+            const DrySuccessDataState<int, _TypedError>.success(2),
+          );
+          expect(
+            bloc.inFailure(DryException.fatal(1)),
+            const DrySuccessDataState<int, _TypedError>.failure(
+              DryException.fatal(1),
             ),
-          ),
-        ],
-      );
+          );
+          await bloc.close();
+        });
 
-      blocTest<_DryEmptyBloc, _DryEmptyState>(
-        'Emits loading, then failure with fatal error, and rethrows',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwFatal),
-        errors: () => [isA<_FatalException>()],
-        expect: () => [
-          const _DryEmptyState.loading(),
-          _DryEmptyState.failure(
-            DryException.fatal(_FatalException()),
-          ),
-        ],
-      );
-    });
-    group('DrySuccessDataBloc', () {
-      _DrySuccessDataBloc blocInitializer([
-        _DrySuccessDataState? initialstate,
-      ]) {
-        return _DrySuccessDataBloc(
-          repository: repo,
-          initialState: initialstate,
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'correct initial state(default one)',
+          build: blocInitializer,
+          verify: (bloc) =>
+              expect(bloc.state, equals(const _DrySuccessDataState.initial())),
         );
-      }
 
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'correct initial state(default one)',
-        build: blocInitializer,
-        verify: (bloc) =>
-            expect(bloc.state, equals(const _DrySuccessDataState.initial())),
-      );
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'correct initial state(passing)',
+          build: () => blocInitializer(const DrySuccessDataState.loading()),
+          verify: (bloc) =>
+              expect(bloc.state, equals(const _DrySuccessDataState.loading())),
+        );
 
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'correct initial state(passing)',
-        build: () => blocInitializer(const DrySuccessDataState.loading()),
-        verify: (bloc) =>
-            expect(bloc.state, equals(const _DrySuccessDataState.loading())),
-      );
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'Emits loading, then success',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.success),
+          expect: () => [
+            const _DrySuccessDataState.loading(),
+            const _DrySuccessDataState.success(2),
+          ],
+          verify: (bloc) {
+            verify(() => bloc.repository.doSomething(_Event.success)).called(1);
+          },
+        );
 
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'Emits loading, then success',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.success),
-        expect: () => [
-          const _DrySuccessDataState.loading(),
-          const _DrySuccessDataState.success(2),
-        ],
-        verify: (bloc) {
-          verify(() => bloc.repository.doSomething(_Event.success)).called(1);
-        },
-      );
-
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'Emits loading, then failure with business typed error',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwBusinessTyped),
-        expect: () => [
-          const _DrySuccessDataState.loading(),
-          _DrySuccessDataState.failure(
-            DryBusinessTypedException(_TypedError()),
-          ),
-        ],
-      );
-
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'Emits loading, then failure with business untyped error',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
-        expect: () => [
-          const _DrySuccessDataState.loading(),
-          _DrySuccessDataState.failure(
-            DryBusinessUntypedException(
-              _UntypedError(),
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'Emits loading, then failure with business typed error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          expect: () => [
+            const _DrySuccessDataState.loading(),
+            _DrySuccessDataState.failure(
+              DryBusinessTypedException(_TypedError()),
             ),
-          ),
-        ],
-      );
+          ],
+        );
 
-      blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
-        'Emits loading, then failure with fatal error, and rethrows',
-        build: blocInitializer,
-        act: (bloc) => bloc.add(_Event.throwFatal),
-        errors: () => [isA<_FatalException>()],
-        expect: () => [
-          const _DrySuccessDataState.loading(),
-          _DrySuccessDataState.failure(
-            DryFatalException(_FatalException()),
-          ),
-        ],
-      );
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'Emits loading, then failure with business untyped error',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          expect: () => [
+            const _DrySuccessDataState.loading(),
+            _DrySuccessDataState.failure(
+              DryBusinessUntypedException(
+                _UntypedError(),
+              ),
+            ),
+          ],
+        );
+
+        blocTest<_DrySuccessDataBloc, _DrySuccessDataState>(
+          'Emits loading, then failure with fatal error, and rethrows',
+          build: blocInitializer,
+          act: (bloc) => bloc.add(_Event.throwFatal),
+          errors: () => [isA<_FatalException>()],
+          expect: () => [
+            const _DrySuccessDataState.loading(),
+            _DrySuccessDataState.failure(
+              DryFatalException(_FatalException()),
+            ),
+          ],
+        );
+      });
     });
   });
 }

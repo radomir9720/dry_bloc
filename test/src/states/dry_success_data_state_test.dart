@@ -117,6 +117,90 @@ void main() {
       );
     });
 
+    test('whenOrNull pattern-matching method', () {
+      expect(
+        initial.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (d) => d,
+          failure: (_) => 4,
+        ),
+        equals(1),
+      );
+      expect(
+        loading.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (d) => d,
+          failure: (_) => 4,
+        ),
+        equals(2),
+      );
+      expect(
+        success.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (d) => d,
+          failure: (_) => 4,
+        ),
+        equals(3),
+      );
+      expect(
+        failure.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (d) => d,
+          failure: (_) => 4,
+        ),
+        equals(4),
+      );
+      expect(
+        const DrySuccessDataState<int, String>.failure(
+          DryException.businessTyped('5'),
+        ).whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (d) => d,
+          failure: (e) => e,
+        ),
+        equals(const DryException.businessTyped('5')),
+      );
+
+      // when null
+      expect(
+        initial.whenOrNull(
+          loading: () => 2,
+          success: (data) => 3,
+          failure: (exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        loading.whenOrNull(
+          initial: () => 1,
+          success: (data) => 3,
+          failure: (exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        success.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          failure: (exc) => 4,
+        ),
+        isNull,
+      );
+      expect(
+        failure.whenOrNull(
+          initial: () => 1,
+          loading: () => 2,
+          success: (data) => 3,
+        ),
+        isNull,
+      );
+    });
+
     test('maybeWhen pattern-matching method', () {
       expect(
         initial.maybeWhen(
