@@ -19,5 +19,6 @@ dependencies:
 dev_dependencies:
   test: ^1.25.8
   mocktail: ^1.0.4
+  coverage: ^1.14.0
   bloc_test: ^10.0.0
   very_good_analysis: ^6.0.0
