@@ -195,5 +195,30 @@ void main() {
         expect(exception.isBusinessUntyped, true);
       });
     });
+
+    test(
+      'toString()',
+      () {
+        expect(
+          DryException<int>.fatal(ArgumentError('something')).toString(),
+          equals(
+            'DryFatalException<int>(Invalid argument(s): something)',
+          ),
+        );
+        expect(
+          DryException<AssertionError>.businessTyped(AssertionError())
+              .toString(),
+          equals(
+            'DryBusinessTypedException<AssertionError>(Assertion failed)',
+          ),
+        );
+        expect(
+          DryException<String>.businessUntyped(UnimplementedError()).toString(),
+          equals(
+            'DryBusinessUntypedException<String>(UnimplementedError)',
+          ),
+        );
+      },
+    );
   });
 }
