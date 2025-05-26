@@ -7,7 +7,9 @@ import 'package:meta/meta.dart';
 /// with support for both business and fatal errors.
 ///
 /// - [E] - type of business errors
-sealed class DryException<E extends Object> with EquatableMixin {
+sealed class DryException<E extends Object>
+    with EquatableMixin
+    implements Exception {
   const DryException({
     this.businessTypedError,
     this.businessUntypedError,
@@ -114,6 +116,10 @@ sealed class DryException<E extends Object> with EquatableMixin {
             orElse(businessUntypedError),
     };
   }
+
+  @internal
+  @override
+  bool? get stringify => true;
 }
 
 /// Exception representing a fatal error
