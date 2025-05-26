@@ -12,7 +12,7 @@
         },
         (error, stack) {
             error.maybeWhenDryException(
-                // If yout want to log to the Crashlytics only fatal exceptions
+                // If you want to log to the Crashlytics only fatal exceptions
                 businessTyped: (error) {},
                 businessUntyped: (error) {},
                 orElse: (error) =>
