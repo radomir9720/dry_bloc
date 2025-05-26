@@ -10,6 +10,9 @@ export 'src/blocs/dry_success_data_bloc.dart';
 // exceptions
 export 'src/exceptions/dry_bloc_exception.dart';
 
+// extensions
+export 'src/extensions/object.dart';
+
 // states
 export 'src/states/dry_data_state.dart';
 export 'src/states/dry_empty_state.dart';
