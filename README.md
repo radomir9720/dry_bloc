@@ -267,7 +267,7 @@ runZonedGuarded(
 As you can see above, you are free to decide which exceptions to log and where to log them. The exception types are finely categorized.
 
 ---
-### Licence
+### License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
