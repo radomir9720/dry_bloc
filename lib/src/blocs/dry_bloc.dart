@@ -104,7 +104,11 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
     );
   }
 
-  /// Handles an exception and emits the appropriate state
+  /// Handles an exception and emits the appropriate state, then rethrows the
+  /// exception after wrapping it in a corresponding [DryException] subclass,
+  /// so you can further handle it properly
+  /// (e.g., using `runZonedGuarded`'s `onError` callback),
+  /// depending on its type(Fatal, BusinessTyped, BusinessUntyped).
   ///
   /// - [exception] caught exception
   /// - [isFatalExceptionOverride] exception fatality handler
@@ -115,16 +119,14 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
     Emitter<State> emit,
   ) async {
     final isFatal = (isFatalExceptionOverride ?? isFatalException)(exception);
-    if (isFatal) {
-      emit(inFailure(DryException.fatal(exception)));
+    final exc = isFatal
+        ? DryException<Error>.fatal(exception)
+        : exception is Error && Error != Object
+            ? DryException<Error>.businessTyped(exception)
+            : DryException<Error>.businessUntyped(exception);
 
-      // ignore: only_throw_errors
-      throw exception;
-    }
-    if (exception is Error && Error != Object) {
-      return emit(inFailure(DryException.businessTyped(exception)));
-    }
+    emit(inFailure(exc));
 
-    emit(inFailure(DryException.businessUntyped(exception)));
+    throw exc;
   }
 }
