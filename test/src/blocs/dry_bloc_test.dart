@@ -160,6 +160,8 @@ void main() {
           repository: repo,
         ),
         act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+        errors: () =>
+            [DryBusinessUntypedException<_TypedError>(_UntypedError())],
         expect: () => [
           const _DryDataState.loading(1),
           _DryDataState.failure(
@@ -183,7 +185,7 @@ void main() {
           repository: repo,
         ),
         act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
-        errors: () => [isA<_UntypedError>()],
+        errors: () => [DryFatalException<_TypedError>(_UntypedError())],
         expect: () => [
           const _DryDataState.loading(1),
           _DryDataState.failure(
@@ -248,6 +250,7 @@ void main() {
           'Emits loading, then failure with business typed error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          errors: () => [DryBusinessTypedException<_TypedError>(_TypedError())],
           expect: () => [
             const _DryDataState.loading(1),
             _DryDataState.failure(
@@ -261,6 +264,11 @@ void main() {
           'Emits loading, then failure with business untyped error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          errors: () => [
+            DryBusinessUntypedException<_TypedError>(
+              _UntypedError(),
+            ),
+          ],
           expect: () => [
             const _DryDataState.loading(1),
             _DryDataState.failure(
@@ -276,7 +284,7 @@ void main() {
           'Emits loading, then failure with fatal error, and rethrows',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwFatal),
-          errors: () => [isA<_FatalException>()],
+          errors: () => [DryFatalException<_TypedError>(_FatalException())],
           expect: () => [
             const _DryDataState.loading(1),
             _DryDataState.failure(
@@ -347,6 +355,8 @@ void main() {
           'Emits loading, then failure with business typed error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          errors: () =>
+              [DryException<_TypedError>.businessTyped(_TypedError())],
           expect: () => [
             const _DryEmptyState.loading(),
             _DryEmptyState.failure(
@@ -359,6 +369,8 @@ void main() {
           'Emits loading, then failure with business untyped error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          errors: () =>
+              [DryException<_TypedError>.businessUntyped(_UntypedError())],
           expect: () => [
             const _DryEmptyState.loading(),
             _DryEmptyState.failure(
@@ -373,7 +385,7 @@ void main() {
           'Emits loading, then failure with fatal error, and rethrows',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwFatal),
-          errors: () => [isA<_FatalException>()],
+          errors: () => [DryException<_TypedError>.fatal(_FatalException())],
           expect: () => [
             const _DryEmptyState.loading(),
             _DryEmptyState.failure(
@@ -446,6 +458,8 @@ void main() {
           'Emits loading, then failure with business typed error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessTyped),
+          errors: () =>
+              [DryException<_TypedError>.businessTyped(_TypedError())],
           expect: () => [
             const _DrySuccessDataState.loading(),
             _DrySuccessDataState.failure(
@@ -458,6 +472,8 @@ void main() {
           'Emits loading, then failure with business untyped error',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwBusinessUntyped),
+          errors: () =>
+              [DryException<_TypedError>.businessUntyped(_UntypedError())],
           expect: () => [
             const _DrySuccessDataState.loading(),
             _DrySuccessDataState.failure(
@@ -472,7 +488,7 @@ void main() {
           'Emits loading, then failure with fatal error, and rethrows',
           build: blocInitializer,
           act: (bloc) => bloc.add(_Event.throwFatal),
-          errors: () => [isA<_FatalException>()],
+          errors: () => [DryException<_TypedError>.fatal(_FatalException())],
           expect: () => [
             const _DrySuccessDataState.loading(),
             _DrySuccessDataState.failure(
