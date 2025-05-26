@@ -225,7 +225,7 @@ Here, `UserLoadError` represents a typed business logic error, which is non-fata
 
 > What about `DryFatalException`?
 
-Any other exception caught by `DryBloc` is considered fatal and is rethrown after emitting a failure state.  This allows you to log these errors (e.g., using `runZonedGuarded`'s `onError` callback) and report them to crash reporting services.
+Any other exception caught by `DryBloc` is considered fatal.  This allows you to log these errors (e.g., using `runZonedGuarded`'s `onError` callback) and report them to crash reporting services.
 
 > Ok, and what's with `DryBusinessUntypedException`? How can we get those?
 
@@ -238,9 +238,36 @@ By default, you won't get those. This type of exception was introduced in case y
 
 You can also override `DryBloc.handle()` and `DryBloc.handleException()`.
 
----
+All exceptions, after emitting the corresponding failure state, are rethrown, so you can catch them using the [Zone](https://api.flutter.dev/flutter/dart-async/Zone-class.html)s API. For example:
 
-License
+```dart
+runZonedGuarded(
+    () async {
+        runApp(...);
+    },
+    (error, stack) {
+        // This package also provides you the maybeWhenDryException() method
+        // so you can easily pattern-match the exception
+        error.maybeWhenDryException(
+            // If you want to log to the Crashlytics only fatal exceptions
+            businessTyped: (error) {},
+            businessUntyped: (error) {},
+            // In this case the fatal handler is redundant, it's just for demonstration
+            fatal: (error) {
+              FirebaseCrashlytics.instance.recordError(error, stack);
+            },
+            orElse: (error) {
+              FirebaseCrashlytics.instance.recordError(error, stack);
+            }
+            );
+    },
+);
+```
+
+As you can see above, you are free to decide which exceptions to log and where to log them. The exception types are finely categorized.
+
+---
+### Licence
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
