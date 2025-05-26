@@ -15,7 +15,7 @@ typedef DryBlocGlobalIsFatalExceptionHandler = bool Function(
 /// Base BLoC class with built-in state and error handling
 ///
 /// - [Event] type of events this BLoC processes
-/// - [State] type of state, must extend DryState<Error>
+/// - [State] type of state, must extend [DryState<Error>]
 /// - [Data] type of successful state data
 /// - [Error] type of business errors
 abstract class DryBloc<Event, State extends DryState<Error>, Data,
