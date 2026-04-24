@@ -7,10 +7,10 @@ import 'package:test/test.dart';
 
 enum _Event {
   success,
-  // The difference between error and exception is that error is thrown by us.
-  // Errors are part of normal functioning of our program. For example,
+  // The difference between business and fatal is that business is a part of
+  // normal functioning of our program. For example,
   // it is completely normal when a user is not authenticated, and we are
-  // throwing a correspondig error. On the other hand, exceptions
+  // throwing a correspondig business error. On the other hand, fatal exceptions
   // are unexpected. For example, a type mismatch, that didn't let us to parse
   // data at runtime
   throwBusinessTyped,

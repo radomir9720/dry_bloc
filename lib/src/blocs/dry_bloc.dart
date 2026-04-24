@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:dry_bloc/dry_bloc.dart';
+import 'package:meta/meta.dart';
 
 /// Function type that determines whether an exception should be treated as
 /// fatal
@@ -12,15 +13,17 @@ typedef DryBlocGlobalIsFatalExceptionHandler = bool Function(
   DryBlocIsFatalExceptionHandler defaultIsFatal,
 );
 
+/// {@template dry_bloc.DryBloc}
 /// Base BLoC class with built-in state and error handling
+/// {@endtemplate}
 ///
 /// - [Event] type of events this BLoC processes
 /// - [State] type of state, must extend [DryState<Error>]
 /// - [Data] type of successful state data
-/// - [Error] type of business errors
-abstract class DryBloc<Event, State extends DryState<Error>, Data,
-    Error extends Object> extends Bloc<Event, State> {
-  /// Creates a BLoC with the initial state
+/// - [Err] type of business errors
+abstract class DryBloc<Event, State extends DryState<Err>, Data,
+    Err extends Object> extends Bloc<Event, State> {
+  /// {@macro dry_bloc.DryBloc}
   DryBloc(super.initialState);
 
   /// Global handler for determining exception fatality.
@@ -48,11 +51,11 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
   /// The default implementation, that determines whether an
   /// exception should be treated as fatal
   ///
-  /// If [Error] is not `Object`, exceptions are considered fatal
-  /// unless they are instances of [Error].
+  /// If [Err] is not `Object`, exceptions are considered fatal
+  /// unless they are instances of [Err].
   bool defaultIsFatalException(Object exception) {
-    if (Error == Object) return true;
-    return exception is! Error;
+    if (Err == Object) return true;
+    return exception is! Err;
   }
 
   /// Determines whether an exception should be treated as fatal
@@ -77,7 +80,7 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
   State inSuccess(Data data);
 
   /// Returns the failure state with exception [exc]
-  State inFailure(DryException<Error> exc);
+  State inFailure(DryException<Err> exc);
 
   /// Handles events of type [Ev] with the provided [action]
   ///
@@ -87,7 +90,7 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
   /// for this method
   void handle<Ev extends Event>(
     Future<Data> Function(Ev event) action, {
-    Stream<Ev> Function(Stream<Ev>, Stream<Ev> Function(Ev))? transformer,
+    EventTransformer<Ev>? transformer,
     DryBlocIsFatalExceptionHandler? isFatalExceptionOverride,
   }) {
     return on<Ev>(
@@ -120,13 +123,97 @@ abstract class DryBloc<Event, State extends DryState<Error>, Data,
   ) async {
     final isFatal = (isFatalExceptionOverride ?? isFatalException)(exception);
     final exc = isFatal
-        ? DryException<Error>.fatal(exception)
-        : exception is Error && Error != Object
-            ? DryException<Error>.businessTyped(exception)
-            : DryException<Error>.businessUntyped(exception);
+        ? DryException<Err>.fatal(exception)
+        : exception is Err && Err != Object
+            ? DryException<Err>.businessTyped(exception)
+            : DryException<Err>.businessUntyped(exception);
 
     emit(inFailure(exc));
 
     throw exc;
   }
+}
+
+/// {@template dry_bloc.DrySingleEventBlocBase}
+/// Base class for a BLoC that handles a single event type.
+///
+/// This class automatically sets up the event handler in the constructor
+/// and marks the default [add] method as internal.
+/// {@endtemplate}
+///
+/// - [Event] the type of events this BLoC processes
+/// - [State] the type of state, must extend [DryState<Err>]
+/// - [Data] the type of successful state data
+/// - [Err] the type of business errors
+sealed class DrySingleEventBlocBase<Event, State extends DryState<Err>, Data,
+    Err extends Object> extends DryBloc<Event, State, Data, Err> {
+  /// {@macro dry_bloc.DrySingleEventBlocBase}
+  DrySingleEventBlocBase(
+    super.initialState, {
+    required Future<Data> Function(Event event) action,
+    EventTransformer<Event>? transformer,
+    DryBlocIsFatalExceptionHandler? isFatalExceptionOverride,
+  }) {
+    handle<Event>(
+      action,
+      transformer: transformer,
+      isFatalExceptionOverride: isFatalExceptionOverride,
+    );
+  }
+
+  @override
+  @internal
+  void add(Event event) => super.add(event);
+}
+
+/// {@template dry_bloc.DrySingleEventBloc}
+/// BLoC that handles a single event type with data.
+///
+/// This class provides a public [addSingleEvent] method for adding events
+/// with data.
+/// {@endtemplate}
+///
+/// - [Event] the type of events this BLoC processes
+/// - [State] the type of state, must extend [DryState<Err>]
+/// - [Data] the type of successful state data
+/// - [Err] the type of business errors
+abstract class DrySingleEventBloc<Event, State extends DryState<Err>, Data,
+        Err extends Object>
+    extends DrySingleEventBlocBase<Event, State, Data, Err> {
+  /// {@macro dry_bloc.DrySingleEventBloc}
+  DrySingleEventBloc(
+    super.initialState, {
+    required super.action,
+    super.transformer,
+    super.isFatalExceptionOverride,
+  });
+
+  /// Adds an event for processing.
+  ///
+  /// - [event] the event to process
+  void addSingleEvent(Event event) => add(event);
+}
+
+/// {@template dry_bloc.DrySingleVoidEventBloc}
+/// BLoC that handles void events (events without data).
+///
+/// This class provides a public [addSingleEvent] method for adding events
+/// without parameters.
+/// {@endtemplate}
+///
+/// - [State] the type of state, must extend [DryState<Err>]
+/// - [Data] the type of successful state data
+/// - [Err] the type of business errors
+abstract class DrySingleVoidEventBloc<State extends DryState<Err>, Data,
+    Err extends Object> extends DrySingleEventBlocBase<void, State, Data, Err> {
+  /// {@macro dry_bloc.DrySingleVoidEventBloc}
+  DrySingleVoidEventBloc(
+    super.initialState, {
+    required Future<Data> Function() action,
+    super.transformer,
+    super.isFatalExceptionOverride,
+  }) : super(action: (event) => action());
+
+  /// Adds a no-data event for processing.
+  void addSingleEvent() => add(null);
 }
