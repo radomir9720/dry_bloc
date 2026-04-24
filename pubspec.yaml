@@ -5,7 +5,7 @@ homepage: https://github.com/radomir9720/dry_bloc
 issue_tracker: https://github.com/radomir9720/dry_bloc/issues
 topics: [bloc, state-management]
 
-version: 1.0.0
+version: 1.1.0
 
 
 environment:
