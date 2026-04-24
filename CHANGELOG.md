@@ -1,3 +1,6 @@
+# 1.1.0
+- feat: introducing `DrySingleEventBloc` and `DryDataSingleVoidEventBloc`, that will help you make your single event BLoCs even tinier
+
 # 1.0.0
 
 - **BREAKING** refactor!: rethrow all the exceptions

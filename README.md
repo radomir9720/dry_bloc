@@ -32,9 +32,21 @@ class LoadProfileBloc
 }
 ```
 
+or the more compact way:
+
+```dart
+typedef LoadProfileState = DrySuccessDataState<User, UserLoadError>;
+
+class LoadProfileBloc extends DrySuccessDataSingleEventBloc<LoadProfileEvent, User, UserLoadError> {
+  LoadProfileBloc({required super.action});
+}
+```
+
 That's all it takes!  With minimal code, `dry_bloc` handles the underlying complexities.
 
-> Let's break down what's happening here. 
+> For more examples take a look at the `example` folder.
+
+***Let's break down what's happening here.***
 
 We'll start with the state. We've defined a `typedef` for convenience, making it easier to reference our `Bloc`'s state. But what is `DrySuccessDataState`, and what are the types (`<User, UserLoadError>`) passed as generics?
 
@@ -61,7 +73,7 @@ sealed class LoadProfileState with _$LoadProfileState {
 }
 ```
 
-And you're not done!  Code generation is still required.  Recent versions of `freezed` have also removed pattern-matching methods, adding complexity.
+And you're not done!  Code generation is still required.
 
 Now for the good news! `DrySuccessDataState<User, UserLoadError>` provides the same functionality as the `freezed` example, but *with* pattern-matching methods and *without* code generation!
 
@@ -164,6 +176,32 @@ LoadProfileBloc({required this.profileService}) {
   handle<LoadProfileEvent>((event) => profileService.loadUser());
 }
 ```
+
+### Single event BLoC
+
+If your BLoC will contain only one event(like in the example above), you can use the `*SingleEventBloc` or `*SingleVoidEventBloc`, and you'll have to write even less code!
+
+There are a lot of BLoCs that contain only one event. 
+For those cases the **DrySingleEventBloc** and **DrySingleVoidEventBloc** will fit perfectly.
+These two extend `DryBloc` and call the `handle()` method for you.
+
+What's the difference, and how to use them?
+
+- **DrySingleEventBloc**: acts like a regular bloc, but instead of `.add(Event)` you call `addSingleEvent(Event)`.
+- **DrySingleVoidEventBloc**: acts like a regular bloc, but instead of `.add(Event)` you call `addSingleEvent()`(without passing an event object), because this bloc, as its name states, does work without event(or with an anonymous event, if you like). So you use this bloc when your service method does not need any input data. For example, when you are fetching the current user you don't have to pass any data, because you make the request with the authorization token, and that token already contains all the necessary data, so you just call `ProfilesService().loadUser()`
+
+With one of these your BLoC will become even tinier, while keeping all the features of a regular `DryBloc`.
+
+To use one of these, instead of a regular `DrySuccessDataBloc`, `DryEmptyBloc` or `DryDataBloc` extend their `SingleEvent` version:
+
+ **Regular** | **SingleEvent** | **SingleVoidEvent** 
+-----------|-----------------|---------------------
+`DryEmptyBloc` | `DryEmptySingleEventBloc` | `DryEmptySingleVoidEventBloc`
+`DryDataBloc` | `DryDataSingleEventBloc` | `DryDataSingleVoidEventBloc`
+`DrySuccessDataBloc` | `DrySuccessDataSingleEventBloc` | `DrySuccessDataSingleVoidEventBloc`
+
+> For more examples take a look at the `example` folder.
+
 
 ### Error Handling
 
