@@ -9,6 +9,7 @@ A Dart package that provides structured state management with the [BLoC](bloc_pa
 
 * Standardized state types for various use cases
 * Built-in error handling with typed exceptions
+* Optional error type — use `Object` to treat all exceptions as fatal without defining a dedicated error class
 * Pattern matching for state handling
 * Reduced boilerplate for common BLoC operations
 
@@ -23,12 +24,9 @@ typedef LoadProfileState = DrySuccessDataState<User, UserLoadError>;
 
 class LoadProfileBloc
     extends DrySuccessDataBloc<LoadProfileEvent, User, UserLoadError> {
-  LoadProfileBloc({required this.profileService}) {
+  LoadProfileBloc({required ProfileService profileService}) {
     handle<LoadProfileEvent>((event) => profileService.loadUser());
   }
-
-  @protected
-  final ProfileService profileService;
 }
 ```
 
@@ -172,7 +170,7 @@ Future<void> _handle(event, emit) async {
 With `dry_bloc`, all you need to write is `profileService.loadUser()`.  `DryBloc`'s `handle` method takes care of the rest:
 
 ```dart
-LoadProfileBloc({required this.profileService}) {
+LoadProfileBloc({required ProfileService profileService}) {
   handle<LoadProfileEvent>((event) => profileService.loadUser());
 }
 ```
@@ -261,9 +259,26 @@ class LoadProfileBloc
 ```
 Here, `UserLoadError` represents a typed business logic error, which is non-fatal.  If your service throws a `UserLoadError` (or a subclass), `DryBloc` handles it and emits a failure state.  This replaces the need for monads. Instead of returning `Result.data()` or `Result.error()`, you return the result directly when successful and throw an error of the specified type when unsuccessful.
 
+> **Tip:** If you don't have a specific error type, you can pass `Object` instead. In that case, all exceptions will be treated as fatal automatically. See [Using `Object` as the error type](#using-object-as-the-error-type) below.
+
 > What about `DryFatalException`?
 
 Any other exception caught by `DryBloc` is considered fatal.  This allows you to log these errors (e.g., using `runZonedGuarded`'s `onError` callback) and report them to crash reporting services.
+
+#### Using `Object` as the error type
+
+If your bloc doesn't have domain-specific error types and you want all caught exceptions to be treated as fatal, you can pass `Object` instead of a concrete error type:
+
+```dart
+class LoadProfileBloc
+    extends DrySuccessDataBloc<LoadProfileEvent, User, Object> {
+  LoadProfileBloc({required ProfileService profileService}) {
+    handle<LoadProfileEvent>((event) => profileService.loadUser());
+  }
+}
+```
+
+When `Object` is used as the error type, `DryBloc` automatically classifies **every** caught exception as `DryFatalException`, so there is no need to define a dedicated error class. This behavior can still be overridden via `isFatalException` if needed.
 
 > Ok, and what's with `DryBusinessUntypedException`? How can we get those?
 
