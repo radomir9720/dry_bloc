@@ -18,17 +18,17 @@ enum _Event {
   throwFatal,
 }
 
-class _TypedError with EquatableMixin implements Exception {
+class _TypedError with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
 
-class _UntypedError with EquatableMixin implements Exception {
+class _UntypedError with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
 
-class _FatalException with EquatableMixin implements Exception {
+class _FatalException with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
