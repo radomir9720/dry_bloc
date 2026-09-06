@@ -6,3 +6,7 @@
 build/
 pubspec.lock
 coverage/
+.vscode/
+
+# FVM Version Cache
+.fvm/

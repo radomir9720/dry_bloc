@@ -11,7 +11,7 @@ import 'package:meta/meta.dart';
 /// [E] represents the type of business errors.
 @immutable
 sealed class DrySuccessDataState<D, E extends Object>
-    with EquatableMixin
+    with Equatable
     implements DryState<E> {
   /// Creates an initial state
   @literal

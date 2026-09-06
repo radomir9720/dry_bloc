@@ -8,7 +8,7 @@ import 'package:meta/meta.dart';
 ///
 /// - [E] - type of business errors
 sealed class DryException<E extends Object>
-    with EquatableMixin
+    with Equatable
     implements Exception {
   const DryException({
     this.businessTypedError,

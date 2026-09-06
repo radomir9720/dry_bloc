@@ -68,8 +68,7 @@ abstract class DrySuccessDataSingleEventBloc<Event, Data, Err extends Object>
 /// See also:
 ///  * [DrySuccessDataBloc]
 ///  * [DrySingleVoidEventBloc]
-abstract class DrySuccessDataSingleVoidEventBloc<Event, Data,
-        Err extends Object>
+abstract class DrySuccessDataSingleVoidEventBloc<Data, Err extends Object>
     extends DrySingleVoidEventBloc<DrySuccessDataState<Data, Err>, Data, Err>
     with DrySuccessDataBlocMixin {
   /// {@macro dry_bloc.DrySingleVoidEventBloc}

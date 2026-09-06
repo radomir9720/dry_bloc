@@ -18,17 +18,17 @@ enum _Event {
   throwFatal,
 }
 
-class _TypedError with EquatableMixin implements Exception {
+class _TypedError with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
 
-class _UntypedError with EquatableMixin implements Exception {
+class _UntypedError with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
 
-class _FatalException with EquatableMixin implements Exception {
+class _FatalException with Equatable implements Exception {
   @override
   List<Object?> get props => [];
 }
@@ -115,6 +115,51 @@ class _DrySuccessDataBloc extends DrySuccessDataBloc<_Event, int, _TypedError>
   }
 
   final _PseudoRepository repository;
+}
+
+class _DrySingleEventBloc
+    extends DrySingleEventBloc<_Event, _DryDataState, int, _TypedError>
+    with DryDataBlocMixin {
+  _DrySingleEventBloc(super.initialState, {required super.action});
+}
+
+class _DrySingleVoidEventBloc
+    extends DrySingleVoidEventBloc<_DryDataState, int, _TypedError>
+    with DryDataBlocMixin {
+  _DrySingleVoidEventBloc(super.initialState, {required super.action});
+}
+
+class _DryDataSingleEventBloc
+    extends DryDataSingleEventBloc<_Event, int, _TypedError> {
+  _DryDataSingleEventBloc(super.initialState, {required super.action});
+}
+
+class _DryDataSingleVoidEventBloc
+    extends DryDataSingleVoidEventBloc<int, _TypedError> {
+  _DryDataSingleVoidEventBloc(super.initialState, {required super.action});
+}
+
+class _DryEmptySingleEventBloc
+    extends DryEmptySingleEventBloc<_Event, _TypedError> {
+  _DryEmptySingleEventBloc({required super.action, super.initialState});
+}
+
+class _DryEmptySingleVoidEventBloc
+    extends DryEmptySingleVoidEventBloc<_TypedError> {
+  _DryEmptySingleVoidEventBloc({required super.action, super.initialState});
+}
+
+class _DrySuccessDataSingleEventBloc
+    extends DrySuccessDataSingleEventBloc<_Event, int, _TypedError> {
+  _DrySuccessDataSingleEventBloc({required super.action, super.initialState});
+}
+
+class _DrySuccessDataSingleVoidEventBloc
+    extends DrySuccessDataSingleVoidEventBloc<int, _TypedError> {
+  _DrySuccessDataSingleVoidEventBloc({
+    required super.action,
+    super.initialState,
+  });
 }
 
 void main() {
@@ -497,6 +542,217 @@ void main() {
           ],
         );
       });
+    });
+    group('DrySingleEventBloc', () {
+      _DrySingleEventBloc blocInitializer() => _DrySingleEventBloc(
+            const DryDataState.initial(1),
+            action: repo.doSomething,
+          );
+
+      blocTest<_DrySingleEventBloc, _DryDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(_Event.success),
+        expect: () => [
+          const _DryDataState.loading(1),
+          const _DryDataState.success(2),
+        ],
+      );
+
+      blocTest<_DrySingleEventBloc, _DryDataState>(
+        'addSingleEvent emits loading, then failure with fatal error, '
+        'and rethrows',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(_Event.throwFatal),
+        errors: () => [DryException<_TypedError>.fatal(_FatalException())],
+        expect: () => [
+          const _DryDataState.loading(1),
+          _DryDataState.failure(1, DryException.fatal(_FatalException())),
+        ],
+      );
+    });
+
+    group('DrySingleVoidEventBloc', () {
+      _DrySingleVoidEventBloc blocInitializer() => _DrySingleVoidEventBloc(
+            const DryDataState.initial(1),
+            action: () => repo.doSomething(_Event.success),
+          );
+
+      blocTest<_DrySingleVoidEventBloc, _DryDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(),
+        expect: () => [
+          const _DryDataState.loading(1),
+          const _DryDataState.success(2),
+        ],
+      );
+    });
+
+    group('DryDataSingleEventBloc', () {
+      _DryDataSingleEventBloc blocInitializer() => _DryDataSingleEventBloc(
+            const DryDataState.initial(1),
+            action: repo.doSomething,
+          );
+
+      blocTest<_DryDataSingleEventBloc, _DryDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(_Event.success),
+        expect: () => [
+          const _DryDataState.loading(1),
+          const _DryDataState.success(2),
+        ],
+      );
+    });
+
+    group('DryDataSingleVoidEventBloc', () {
+      _DryDataSingleVoidEventBloc blocInitializer() =>
+          _DryDataSingleVoidEventBloc(
+            const DryDataState.initial(1),
+            action: () => repo.doSomething(_Event.success),
+          );
+
+      blocTest<_DryDataSingleVoidEventBloc, _DryDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(),
+        expect: () => [
+          const _DryDataState.loading(1),
+          const _DryDataState.success(2),
+        ],
+      );
+    });
+
+    group('DryEmptySingleEventBloc', () {
+      _DryEmptySingleEventBloc blocInitializer() => _DryEmptySingleEventBloc(
+            action: repo.doSomething,
+          );
+
+      blocTest<_DryEmptySingleEventBloc, _DryEmptyState>(
+        'default initial state',
+        build: blocInitializer,
+        verify: (bloc) => expect(bloc.state, const _DryEmptyState.initial()),
+      );
+
+      blocTest<_DryEmptySingleEventBloc, _DryEmptyState>(
+        'provided initial state',
+        build: () => _DryEmptySingleEventBloc(
+          initialState: const DryEmptyState.loading(),
+          action: repo.doSomething,
+        ),
+        verify: (bloc) => expect(bloc.state, const _DryEmptyState.loading()),
+      );
+
+      blocTest<_DryEmptySingleEventBloc, _DryEmptyState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(_Event.success),
+        expect: () => [
+          const _DryEmptyState.loading(),
+          const _DryEmptyState.success(),
+        ],
+      );
+    });
+
+    group('DryEmptySingleVoidEventBloc', () {
+      _DryEmptySingleVoidEventBloc blocInitializer() =>
+          _DryEmptySingleVoidEventBloc(
+            action: () => repo.doSomething(_Event.success),
+          );
+
+      blocTest<_DryEmptySingleVoidEventBloc, _DryEmptyState>(
+        'default initial state',
+        build: blocInitializer,
+        verify: (bloc) => expect(bloc.state, const _DryEmptyState.initial()),
+      );
+
+      blocTest<_DryEmptySingleVoidEventBloc, _DryEmptyState>(
+        'provided initial state',
+        build: () => _DryEmptySingleVoidEventBloc(
+          initialState: const DryEmptyState.loading(),
+          action: () => repo.doSomething(_Event.success),
+        ),
+        verify: (bloc) => expect(bloc.state, const _DryEmptyState.loading()),
+      );
+
+      blocTest<_DryEmptySingleVoidEventBloc, _DryEmptyState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(),
+        expect: () => [
+          const _DryEmptyState.loading(),
+          const _DryEmptyState.success(),
+        ],
+      );
+    });
+
+    group('DrySuccessDataSingleEventBloc', () {
+      _DrySuccessDataSingleEventBloc blocInitializer() =>
+          _DrySuccessDataSingleEventBloc(
+            action: repo.doSomething,
+          );
+
+      blocTest<_DrySuccessDataSingleEventBloc, _DrySuccessDataState>(
+        'default initial state',
+        build: blocInitializer,
+        verify: (bloc) =>
+            expect(bloc.state, const _DrySuccessDataState.initial()),
+      );
+
+      blocTest<_DrySuccessDataSingleEventBloc, _DrySuccessDataState>(
+        'provided initial state',
+        build: () => _DrySuccessDataSingleEventBloc(
+          initialState: const DrySuccessDataState.loading(),
+          action: repo.doSomething,
+        ),
+        verify: (bloc) =>
+            expect(bloc.state, const _DrySuccessDataState.loading()),
+      );
+
+      blocTest<_DrySuccessDataSingleEventBloc, _DrySuccessDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(_Event.success),
+        expect: () => [
+          const _DrySuccessDataState.loading(),
+          const _DrySuccessDataState.success(2),
+        ],
+      );
+    });
+
+    group('DrySuccessDataSingleVoidEventBloc', () {
+      _DrySuccessDataSingleVoidEventBloc blocInitializer() =>
+          _DrySuccessDataSingleVoidEventBloc(
+            action: () => repo.doSomething(_Event.success),
+          );
+
+      blocTest<_DrySuccessDataSingleVoidEventBloc, _DrySuccessDataState>(
+        'default initial state',
+        build: blocInitializer,
+        verify: (bloc) =>
+            expect(bloc.state, const _DrySuccessDataState.initial()),
+      );
+
+      blocTest<_DrySuccessDataSingleVoidEventBloc, _DrySuccessDataState>(
+        'provided initial state',
+        build: () => _DrySuccessDataSingleVoidEventBloc(
+          initialState: const DrySuccessDataState.loading(),
+          action: () => repo.doSomething(_Event.success),
+        ),
+        verify: (bloc) =>
+            expect(bloc.state, const _DrySuccessDataState.loading()),
+      );
+
+      blocTest<_DrySuccessDataSingleVoidEventBloc, _DrySuccessDataState>(
+        'addSingleEvent emits loading, then success',
+        build: blocInitializer,
+        act: (bloc) => bloc.addSingleEvent(),
+        expect: () => [
+          const _DrySuccessDataState.loading(),
+          const _DrySuccessDataState.success(2),
+        ],
+      );
     });
   });
 }

@@ -11,7 +11,7 @@ import 'package:meta/meta.dart';
 /// - [E] - type of business errors
 @immutable
 sealed class DryDataState<D, E extends Object>
-    with EquatableMixin
+    with Equatable
     implements DryState<E> {
   @literal
   const DryDataState._(this.data);

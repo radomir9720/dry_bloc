@@ -10,7 +10,7 @@ import 'package:meta/meta.dart';
 /// [E] represents the type of business errors.
 @immutable
 sealed class DryEmptyState<E extends Object>
-    with EquatableMixin
+    with Equatable
     implements DryState<E> {
   /// Base constructor for empty states
   @literal
